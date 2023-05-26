@@ -86,7 +86,7 @@
         <Button x:Name="btnPalette7" Content="⬜" HorizontalAlignment="Left" Margin="171,381,0,0" VerticalAlignment="Top" Width="20" Height="20" Background="White" Click="btnPalette_Click"/>
         <Image x:Name="btn_WindowBackgroundColor" HorizontalAlignment="Left" Height="28" Margin="171,270,0,0" VerticalAlignment="Top" Width="27" Source="/407569.png" MouseUp="btn_WindowBackgroundColor_MouseUp" Cursor="Hand"/>
         <CheckBox x:Name="checkFitToCurve" Content="Сглаживание" HorizontalAlignment="Left" Margin="20,246,0,0" VerticalAlignment="Top" IsChecked="True" Checked="checkFitToCurve_Checked" Unchecked="checkFitToCurve_Checked"/>
-        <Image HorizontalAlignment="Right" Height="19" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="19" Source="background-icon.png" MouseUp="Image_MouseUp"/>
+        <Image HorizontalAlignment="Right" Height="19" Margin="0,0,10,10" VerticalAlignment="Bottom" Width="19" Source="background-icon.png" MouseUp="Image_MouseUp" Cursor="Hand"/>
         <Image HorizontalAlignment="Left" Height="30" Margin="164,117,0,0" VerticalAlignment="Top" Width="30" Source="undo.png" MouseUp="btn_Undo"/>
         <Image HorizontalAlignment="Left" Height="30" Margin="164,160,0,0" VerticalAlignment="Top" Width="30" Source="redo.png" MouseUp="btn_Redo"/>
 

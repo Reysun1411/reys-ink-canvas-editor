@@ -71,7 +71,7 @@ namespace WpfApp2
         {
             if (handle)
             {
-                if (strokeAdded.Count == 10)
+                if (strokeAdded.Count >= 10)
                     // Если кол-во штрихов в strokeAdded достигло 10, то удаляется первый штрих в списке 
                     strokeAdded.RemoveAt(0);
                 strokeAdded.Add(e.Added);
@@ -113,14 +113,23 @@ namespace WpfApp2
             handle = false;
             if (strokeAdded.Count > 0)
             {
-                int lastelement = strokeAdded.Count - 1;
+                try
+                {
+                    int lastelement = strokeAdded.Count - 1;
 
-                // Последний штрих в strokeAdded удаляется из полотна
-                inkCanvas1.Strokes.Remove(strokeAdded[lastelement]);
-                // И затем заносится в список strokeRemoved
-                strokeRemoved.Add(strokeAdded[lastelement]);
-                // А из strokeAdded уаляется
-                strokeAdded.RemoveAt(lastelement);
+                    // Последний штрих в strokeAdded удаляется из полотна
+                    inkCanvas1.Strokes.Remove(strokeAdded[lastelement]);
+                    // И затем заносится в список strokeRemoved
+                    strokeRemoved.Add(strokeAdded[lastelement]);
+                    // А из strokeAdded уаляется
+                    strokeAdded.RemoveAt(lastelement);
+                }
+                catch (System.ArgumentException)
+                {
+                    strokeAdded.Clear();
+                    strokeRemoved.Clear();
+                    return;
+                }
             }
             handle = true;
         }
@@ -302,6 +311,8 @@ namespace WpfApp2
 
             if (msgBoxResult == MessageBoxResult.Yes)
             {
+                strokeAdded.Clear();
+                strokeRemoved.Clear();
                 inkCanvas1.Strokes.Clear();
             }
         }
