@@ -18,7 +18,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace WpfApp2
+namespace Rice
 {
     /// <summary>
     /// Логика взаимодействия для MainWindow.xaml
@@ -40,8 +40,8 @@ namespace WpfApp2
         double pX, pY, tool, prevPointX, prevPointY;
 
         // Списки List штрихов для кнопок Undo и Redo
-        List<System.Windows.Ink.StrokeCollection> strokeAdded = new List<System.Windows.Ink.StrokeCollection>(10);
-        List<System.Windows.Ink.StrokeCollection> strokeRemoved = new List<System.Windows.Ink.StrokeCollection>(10);
+        List<System.Windows.Ink.StrokeCollection> strokeAdded = new List<System.Windows.Ink.StrokeCollection>(20);
+        List<System.Windows.Ink.StrokeCollection> strokeRemoved = new List<System.Windows.Ink.StrokeCollection>(20);
         private bool handle = true;
 
 
@@ -71,7 +71,7 @@ namespace WpfApp2
         {
             if (handle)
             {
-                if (strokeAdded.Count >= 10)
+                if (strokeAdded.Count >= 20)
                     // Если кол-во штрихов в strokeAdded достигло 10, то удаляется первый штрих в списке 
                     strokeAdded.RemoveAt(0);
                 strokeAdded.Add(e.Added);
@@ -108,6 +108,7 @@ namespace WpfApp2
             Redo();
         }
 
+        // Undo - Отмена
         private void Undo()
         {
             handle = false;
@@ -200,226 +201,6 @@ namespace WpfApp2
         }
 
 
-        // Обработчик прокручивания ползунков
-        private void sld_Color_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            var slider = sender as Slider;
-            string crlName = slider.Name;  // Определение имени ползунка
-            double value = slider.Value;  // Определение значения прокрученного ползунка 
-
-            // Выбор цвета, который изменится, изменение его с переводом в тип byte
-            if (crlName.Equals("sld_RedColor"))
-            {
-                mcolor.red = Convert.ToByte(value);
-            }
-            else if (crlName.Equals("sld_GreenColor"))
-            {
-                mcolor.green = Convert.ToByte(value);
-            }
-            else if (crlName.Equals("sld_BlueColor"))
-            {
-                mcolor.blue = Convert.ToByte(value);
-            }
-
-            clr = Color.FromRgb(mcolor.red, mcolor.green, mcolor.blue);
-            string hexclr = Convert.ToString(clr);
-            lbl1.Background = new SolidColorBrush(Color.FromRgb(mcolor.red, mcolor.green, mcolor.blue));
-            lbl1.Content = hexclr.Remove(1, 2);
-            inkCanvas1.DefaultDrawingAttributes.Color = clr;
-        }
-
-        // Сохранение холста в .isf (собственный формат InkCanvas)
-        private void btn_SaveInk_Click(object sender, RoutedEventArgs e)
-        {
-            SaveFileDialog savedialog = new SaveFileDialog();
-            savedialog.Title = "Сохранить картинку в формате InkCanvas...";
-            savedialog.FileName = "inkimage";
-            savedialog.DefaultExt = ".isf";
-            savedialog.OverwritePrompt = true;
-            savedialog.CheckPathExists = true;
-            savedialog.Filter = "isf files (*.isf)|*.isf";
-
-            if (savedialog.ShowDialog() == true)
-            {
-                FileStream fs = new FileStream(savedialog.FileName, FileMode.Create);
-                inkCanvas1.Strokes.Save(fs);
-                fs.Close();
-            }
-        }
-
-        // Загрузка isf в холст
-        private void btn_Load_Click(object sender, RoutedEventArgs e)
-        {
-            OpenFileDialog opendialog = new OpenFileDialog();
-            opendialog.Title = "Загрузить картинку в формате InkCanvas...";
-            opendialog.CheckPathExists = true;
-            opendialog.Filter = 
-                "Image Files|*.jpg;*.jpeg;*.png|isf files (*.isf)|*.isf";
-
-            if (opendialog.ShowDialog() == true)
-            {
-                // FileStream открывает файл в режиме чтения
-                FileStream fs = new FileStream(opendialog.FileName, FileMode.Open, 
-                    FileAccess.Read, FileShare.ReadWrite);
-                var extension = System.IO.Path.GetExtension(opendialog.FileName);
-
-                // Из файла isf (расширение inkcanvas) перенесутся все штрихи на полотно
-                if (extension == ".isf")
-                {
-                    inkCanvas1.Strokes = new StrokeCollection(fs);
-                }
-                // Остальное - файлы изображения
-                else
-                {
-                    MessageBoxResult result = MessageBox.Show("Подстроить размер полотна под картинку?", 
-                        "Вставка изображения", MessageBoxButton.YesNo, MessageBoxImage.Question);
-                    if (result == MessageBoxResult.Yes)
-                    {
-                        var decoder = BitmapDecoder.Create(fs, 
-                            BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.Default);
-                        // Получение размера изображения для настройки холста
-                        int imgW = decoder.Frames[0].PixelWidth;
-                        int imgH = decoder.Frames[0].PixelHeight;
-                        if (imgW > 3840)
-                        {
-                            imgW = 3840;
-                        }
-                        if (imgH > 2160)
-                        {
-                            imgH = 2160;
-                        }
-                        txt_CanvasWidth.Text = Convert.ToString(imgW);
-                        txt_CanvasHeight.Text = Convert.ToString(imgH);
-                        inkCanvas1.Width = imgW;
-                        inkCanvas1.Height = imgH;
-                    }
-                    // Загрузка изображения как бекграунда
-                    ImageBrush canvasbg = new ImageBrush();
-                    canvasbg.ImageSource = new BitmapImage(new Uri(opendialog.FileName, UriKind.Relative));
-                    inkCanvas1.Background = canvasbg;
-                }
-                fs.Close();
-            }
-        }
-
-        // Очистка холста с подтверждением
-        private void btn_CanvasClear_Click(object sender, RoutedEventArgs e)
-        {
-            MessageBoxResult msgBoxResult = 
-                MessageBox.Show("Вы уверены, что хотите очистить холст?", 
-                "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-            if (msgBoxResult == MessageBoxResult.Yes)
-            {
-                strokeAdded.Clear();
-                strokeRemoved.Clear();
-                inkCanvas1.Strokes.Clear();
-            }
-        }
-
-        // Обработчик кнопок палитры
-        private void btnPalette_Click(object sender, RoutedEventArgs e)
-        {
-            var btn = sender as Button;
-            // Задаем белый цвет в 2 типах: Color и Brush
-            var cwhite = Color.FromRgb(255, 255, 255);
-            var bwhite = new SolidColorBrush(cwhite);
-            // Цвет, который сейчас используется
-            var actualColor = inkCanvas1.DefaultDrawingAttributes.Color;
-            // Конвертирование цвета кнопки из формата HEX в формат RGB для проверки на белый цвет
-            var btncolor = (Color)ColorConverter.ConvertFromString(Convert.ToString(btn.Background));
-            
-            if (btncolor == cwhite & actualColor != cwhite)
-            {
-                // Если цвет кнопки белый, то он будет закрашен тем, что используется сейчас.
-                // Также если юзер тыкнул по закрашенной кнопке белым, то кнопка становится белой (2 случай).
-                btn.Content = string.Empty;
-                btn.Background = new SolidColorBrush(actualColor);
-            }
-            else if (btncolor != cwhite & actualColor == cwhite)
-            {
-                btn.Content = "⬜";
-                btn.Background = bwhite;
-            }
-            else if (btncolor != cwhite & actualColor != cwhite)
-            {
-                // Если на кнопку назначен цвет, то он будет использован
-                Color clr = ((SolidColorBrush)btn.Background).Color;
-                double r = Convert.ToDouble(clr.R);
-                double g = Convert.ToDouble(clr.G);
-                double b = Convert.ToDouble(clr.B);
-                sld_RedColor.Value = r;
-                sld_GreenColor.Value = g;
-                sld_BlueColor.Value = b;
-                inkCanvas1.DefaultDrawingAttributes.Color = clr;
-            }
-        }
-
-        // Вкл/выкл сглаживание штрихов
-        private void checkFitToCurve_Checked(object sender, RoutedEventArgs e)
-        {
-            var checkbox = sender as CheckBox;
-            if (checkbox.IsChecked == true) 
-            { 
-                inkCanvas1.DefaultDrawingAttributes.FitToCurve = true;
-            }
-            else
-            {
-                inkCanvas1.DefaultDrawingAttributes.FitToCurve = false;
-            }
-            
-        }
-
-        // Изменение цвета фона приложения
-        private void Image_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            var window = Window.GetWindow(this);
-            window.Background = new SolidColorBrush(inkCanvas1.DefaultDrawingAttributes.Color);
-        }
-
-        // Изменение фона полотна
-        private void btn_WindowBackgroundColor_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            inkCanvas1.Background = new SolidColorBrush(inkCanvas1.DefaultDrawingAttributes.Color);
-        }
-
-        // Экспорт рисунка в png
-        private void btn_Save_Click(object sender, RoutedEventArgs e)
-        {
-            this.inkCanvas1.EditingMode = InkCanvasEditingMode.None;
-            SaveFileDialog savedialog = new SaveFileDialog();
-            savedialog.Title = "Сохранить картинку как...";
-            savedialog.FileName = "savedimage";
-            savedialog.DefaultExt = ".png";
-            savedialog.OverwritePrompt = true;
-            savedialog.CheckPathExists = true;
-            savedialog.Filter = "Image (.png)|*.png";
-
-            Nullable<bool> result = savedialog.ShowDialog();
-
-            if (result == true)
-            {
-                string fileName = savedialog.FileName;
-
-                var size = new Size(inkCanvas1.ActualWidth, inkCanvas1.ActualHeight);
-                inkCanvas1.Margin = new Thickness(0, 0, 0, 0);
-                inkCanvas1.Measure(size);
-                inkCanvas1.Arrange(new Rect(size));
-                var encoder = new PngBitmapEncoder();
-                var bitmapTarget = new RenderTargetBitmap((int)size.Width, 
-                    (int)size.Height, 96, 96, PixelFormats.Default);
-                bitmapTarget.Render(inkCanvas1);
-                using (FileStream fs = new FileStream(fileName, FileMode.Create))
-                {
-                    encoder.Frames.Add(BitmapFrame.Create(bitmapTarget));
-                    encoder.Save(fs);
-                }
-                inkCanvas1.Margin = new Thickness(234, 0, 0, 0);
-                this.inkCanvas1.EditingMode = InkCanvasEditingMode.Ink;
-                MessageBox.Show("Файл сохранен", "Успех", MessageBoxButton.OK);
-            }
-        }
-
         // Режимы
         private void Mode_Checked(object sender, RoutedEventArgs e)
         {
@@ -470,10 +251,10 @@ namespace WpfApp2
             }
         }
 
-        // Слайдер размера кисти
+
+        // Изменение толщины кисти
         private void sld_BrushSize_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            // Изменение толщины кисти
             var slider = sender as Slider;
             inkCanvas1.DefaultDrawingAttributes.Width = slider.Value;
 
@@ -481,7 +262,7 @@ namespace WpfApp2
             if (tool == 5)
             {
                 // Если пользователь уже в режиме ластика, то режим надо переназначить,
-                // чтобы он принял изменения ластика. Иначе не примит
+                // чтобы он принял изменения ластика. Иначе не примет
                 inkCanvas1.EditingMode = InkCanvasEditingMode.None;
                 inkCanvas1.EraserShape = new RectangleStylusShape(slider.Value, slider.Value);
                 inkCanvas1.EditingMode = InkCanvasEditingMode.EraseByPoint;
@@ -492,6 +273,90 @@ namespace WpfApp2
                 inkCanvas1.EraserShape = new RectangleStylusShape(slider.Value, slider.Value);
             }
         }
+
+
+        // Вкл/выкл сглаживание штрихов
+        private void checkFitToCurve_Checked(object sender, RoutedEventArgs e)
+        {
+            var checkbox = sender as CheckBox;
+            if (checkbox.IsChecked == true) 
+            { 
+                inkCanvas1.DefaultDrawingAttributes.FitToCurve = true;
+            }
+            else
+            {
+                inkCanvas1.DefaultDrawingAttributes.FitToCurve = false;
+            }
+        }
+
+
+        // Обработчик прокручивания ползунков цвета
+        private void sld_Color_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            var slider = sender as Slider;
+            string crlName = slider.Name;  // Определение имени ползунка
+            double value = slider.Value;  // Определение значения прокрученного ползунка 
+
+            // Выбор цвета, который изменится, изменение его с переводом в тип byte
+            if (crlName.Equals("sld_RedColor"))
+            {
+                mcolor.red = Convert.ToByte(value);
+            }
+            else if (crlName.Equals("sld_GreenColor"))
+            {
+                mcolor.green = Convert.ToByte(value);
+            }
+            else if (crlName.Equals("sld_BlueColor"))
+            {
+                mcolor.blue = Convert.ToByte(value);
+            }
+
+            clr = Color.FromRgb(mcolor.red, mcolor.green, mcolor.blue);
+            string hexclr = Convert.ToString(clr);
+            lbl1.Background = new SolidColorBrush(Color.FromRgb(mcolor.red, mcolor.green, mcolor.blue));
+            lbl1.Content = hexclr.Remove(1, 2);
+            inkCanvas1.DefaultDrawingAttributes.Color = clr;
+        }
+
+
+        // Обработчик кнопок палитры
+        private void btnPalette_Click(object sender, RoutedEventArgs e)
+        {
+            var btn = sender as Button;
+            // Задаем белый цвет в 2 типах: Color и Brush
+            var cwhite = Color.FromRgb(255, 255, 255);
+            var bwhite = new SolidColorBrush(cwhite);
+            // Цвет, который сейчас используется
+            var actualColor = inkCanvas1.DefaultDrawingAttributes.Color;
+            // Конвертирование цвета кнопки из формата HEX в формат RGB для проверки на белый цвет
+            var btncolor = (Color)ColorConverter.ConvertFromString(Convert.ToString(btn.Background));
+            
+            if (btncolor == cwhite & actualColor != cwhite)
+            {
+                // Если цвет кнопки белый, то он будет закрашен тем, что используется сейчас.
+                // Также если юзер тыкнул по закрашенной кнопке белым, то кнопка становится белой (2 случай).
+                btn.Content = string.Empty;
+                btn.Background = new SolidColorBrush(actualColor);
+            }
+            else if (btncolor != cwhite & actualColor == cwhite)
+            {
+                btn.Content = "⬜";
+                btn.Background = bwhite;
+            }
+            else if (btncolor != cwhite & actualColor != cwhite)
+            {
+                // Если на кнопку назначен цвет, то он будет использован
+                Color clr = ((SolidColorBrush)btn.Background).Color;
+                double r = Convert.ToDouble(clr.R);
+                double g = Convert.ToDouble(clr.G);
+                double b = Convert.ToDouble(clr.B);
+                sld_RedColor.Value = r;
+                sld_GreenColor.Value = g;
+                sld_BlueColor.Value = b;
+                inkCanvas1.DefaultDrawingAttributes.Color = clr;
+            }
+        }
+
 
         // Изменение разрешения полотна
         private void txt_CanvasSize_TextChanged(object sender, TextChangedEventArgs e)
@@ -530,8 +395,151 @@ namespace WpfApp2
                 inkCanvas1.Height = val;
             }
         }
-        
 
+
+        // Экспорт рисунка в png
+        private void btn_Save_Click(object sender, RoutedEventArgs e)
+        {
+            this.inkCanvas1.EditingMode = InkCanvasEditingMode.None;
+            SaveFileDialog savedialog = new SaveFileDialog();
+            savedialog.Title = "Сохранить картинку как...";
+            savedialog.FileName = "savedimage";
+            savedialog.DefaultExt = ".png";
+            savedialog.OverwritePrompt = true;
+            savedialog.CheckPathExists = true;
+            savedialog.Filter = "Image (.png)|*.png";
+
+            Nullable<bool> result = savedialog.ShowDialog();
+
+            if (result == true)
+            {
+                string fileName = savedialog.FileName;
+
+                var size = new Size(inkCanvas1.ActualWidth, inkCanvas1.ActualHeight);
+                inkCanvas1.Margin = new Thickness(0, 0, 0, 0);
+                inkCanvas1.Measure(size);
+                inkCanvas1.Arrange(new Rect(size));
+                var encoder = new PngBitmapEncoder();
+                var bitmapTarget = new RenderTargetBitmap((int)size.Width, 
+                    (int)size.Height, 96, 96, PixelFormats.Default);
+                bitmapTarget.Render(inkCanvas1);
+                using (FileStream fs = new FileStream(fileName, FileMode.Create))
+                {
+                    encoder.Frames.Add(BitmapFrame.Create(bitmapTarget));
+                    encoder.Save(fs);
+                }
+                inkCanvas1.Margin = new Thickness(234, 0, 0, 0);
+                this.inkCanvas1.EditingMode = InkCanvasEditingMode.Ink;
+                MessageBox.Show("Файл сохранен", "Успех", MessageBoxButton.OK);
+            }
+        }
+
+
+        // Сохранение холста в .isf (собственный формат InkCanvas)
+        private void btn_SaveInk_Click(object sender, RoutedEventArgs e)
+        {
+            SaveFileDialog savedialog = new SaveFileDialog();
+            savedialog.Title = "Сохранить картинку в формате InkCanvas...";
+            savedialog.FileName = "inkimage";
+            savedialog.DefaultExt = ".isf";
+            savedialog.OverwritePrompt = true;
+            savedialog.CheckPathExists = true;
+            savedialog.Filter = "isf files (*.isf)|*.isf";
+
+            if (savedialog.ShowDialog() == true)
+            {
+                FileStream fs = new FileStream(savedialog.FileName, FileMode.Create);
+                inkCanvas1.Strokes.Save(fs);
+                fs.Close();
+            }
+        }
+
+
+        // Загрузка isf или png/jpg в холст
+        private void btn_Load_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog opendialog = new OpenFileDialog();
+            opendialog.Title = "Загрузить картинку или полотно InkCanvas...";
+            opendialog.CheckPathExists = true;
+            opendialog.Filter = 
+                "Image Files|*.jpg;*.jpeg;*.png|isf files (*.isf)|*.isf";
+
+            if (opendialog.ShowDialog() == true)
+            {
+                // FileStream открывает файл в режиме чтения
+                FileStream fs = new FileStream(opendialog.FileName, FileMode.Open, 
+                    FileAccess.Read, FileShare.ReadWrite);
+                var extension = System.IO.Path.GetExtension(opendialog.FileName);
+
+                // Из файла isf (расширение inkcanvas) перенесутся все штрихи на полотно
+                if (extension == ".isf")
+                {
+                    inkCanvas1.Strokes = new StrokeCollection(fs);
+                }
+                // Остальное - файлы изображения
+                else
+                {
+                    MessageBoxResult result = MessageBox.Show("Подстроить размер полотна под картинку?", 
+                        "Вставка изображения", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                    if (result == MessageBoxResult.Yes)
+                    {
+                        var decoder = BitmapDecoder.Create(fs, 
+                            BitmapCreateOptions.IgnoreColorProfile, BitmapCacheOption.Default);
+                        // Получение размера изображения для настройки холста
+                        int imgW = decoder.Frames[0].PixelWidth;
+                        int imgH = decoder.Frames[0].PixelHeight;
+                        if (imgW > 3840)
+                        {
+                            imgW = 3840;
+                        }
+                        if (imgH > 2160)
+                        {
+                            imgH = 2160;
+                        }
+                        txt_CanvasWidth.Text = Convert.ToString(imgW);
+                        txt_CanvasHeight.Text = Convert.ToString(imgH);
+                        inkCanvas1.Width = imgW;
+                        inkCanvas1.Height = imgH;
+                    }
+                    // Загрузка изображения как бекграунда
+                    ImageBrush canvasbg = new ImageBrush();
+                    canvasbg.ImageSource = new BitmapImage(new Uri(opendialog.FileName, UriKind.Relative));
+                    inkCanvas1.Background = canvasbg;
+                }
+                fs.Close();
+            }
+        }
+
+
+        // Очистка холста с подтверждением
+        private void btn_CanvasClear_Click(object sender, RoutedEventArgs e)
+        {
+            MessageBoxResult msgBoxResult = 
+                MessageBox.Show("Вы уверены, что хотите очистить холст?", 
+                "Подтверждение", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (msgBoxResult == MessageBoxResult.Yes)
+            {
+                strokeAdded.Clear();
+                strokeRemoved.Clear();
+                inkCanvas1.Strokes.Clear();
+            }
+        }
+
+        // Изменение фона полотна
+        private void btn_CanvasBackground_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            inkCanvas1.Background = new SolidColorBrush(inkCanvas1.DefaultDrawingAttributes.Color);
+        }
+
+        // Изменение цвета фона приложения
+        private void btn_WindowBackground_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            var window = Window.GetWindow(this);
+            window.Background = new SolidColorBrush(inkCanvas1.DefaultDrawingAttributes.Color);
+        }
+
+        // Фильтрация введённого текста от букв с использованием регулярных выражений
         private void txtOnlyDigit_PreviewInput(object sender, TextCompositionEventArgs e)
         {
             Regex regex = new Regex("[^0-9]+");
